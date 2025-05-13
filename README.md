@@ -1,6 +1,6 @@
 # 🔐 PyPassManager  
 
-A secure and user-friendly password manager built with Python and Tkinter as my Cyber Security Project in my 3rd Semester (Fall 2024) at FAST-NUCES.. Store, encrypt, and manage your credentials with a modern GUI interface.
+*A secure Python password manager with modern GUI, developed as my 3rd Semester Cyber Security Project (Fall 2024) at FAST-NUCES. Features Tkinter interface with military-grade encryption to store, manage, and protect your credentials.*
 
 ---
 
