@@ -1,6 +1,6 @@
 # 🔐 PyPassManager  
 
-*A secure Python password manager with modern GUI, developed as my 3rd Semester Cyber Security Project (Fall 2024) at FAST-NUCES. Features Tkinter interface with military-grade encryption to store, manage, and protect your credentials.*
+*__A secure Python password manager with modern GUI, developed as my <u>3rd Semester Cyber Security Project (Fall 2024) at FAST-NUCES</u>__. Features Tkinter interface with military-grade encryption to store, manage, and protect your credentials.*
 
 ---
 
