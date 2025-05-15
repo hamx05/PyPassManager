@@ -9,7 +9,7 @@
 - **🛡️ End-to-End Encryption** - AES encryption for stored credentials  
 - **🔑 Password Generator** - Create strong random passwords  
 - **📊 Strength Analyzer** - Visual password strength meter  
-- **📋 Credential Management** - Add, view, and delete passwords  
+- **📋 Credential Management** - Add, view, delete and analyze passwords  
 - **📋 One-Click Copy** - Clipboard integration for easy pasting  
 
 ---
@@ -18,8 +18,8 @@
 - **Python Programming** - OOP principles and modular design  
 - **Tkinter GUI Development** - Built interactive desktop interface  
 - **Cryptography** - Implemented AES + MD5 security layers  
-- **File Handling** - JSON storage with secure data management  
-- **Error Handling** - Robust input validation and user feedback  
+- **Data Handling** - SQLite Database with secure data management  
+- **Error Handling** - Robust input validation and edge cases handling  
 
 ---
 
@@ -29,7 +29,7 @@
 | Core Language   | Python 3.x                            |
 | GUI Framework   | Tkinter                               |
 | Cryptography    | AES encryption, MD5 hashing           |
-| Data Storage    | JSON files                            |
+| Data Storage    | SQLite                                |
 | Utilities       | pyperclip, random, string modules     |
 
 ---
