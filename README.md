@@ -6,7 +6,7 @@
 
 ### ⭐ Features  
 - **🔒 Secure Authentication** - User login with MD5 hashed passwords  
-- **🛡️ End-to-End Encryption** - RSA encryption for stored credentials  
+- **🛡️ End-to-End Encryption** - AES encryption for stored credentials  
 - **🔑 Password Generator** - Create strong random passwords  
 - **📊 Strength Analyzer** - Visual password strength meter  
 - **📋 Credential Management** - Add, view, and delete passwords  
