@@ -1,58 +1,37 @@
-import os
 import re
-import json
 import string
 import random
 import pyperclip
 import tkinter as tk
 from tkinter import ttk, messagebox
-from config import USER_DB_FILE, CURRENT_USER
-from crypto import md5
-from storage import initializeStorage
+from config import CURRENT_USER
+from database import any_users_exist, add_user, validate_user
 
-def ifUsersExist(file_path: str) -> bool:
+def ifUsersExist() -> bool:
     """
-    Checks if the JSON file contains any users.
-
-    Args:
-        file_path (str): Path to the JSON file.
+    Checks if any users exist in the database.
 
     Returns:
         bool: True if at least one user exists, otherwise False.
     """
-    if not os.path.exists(file_path):
-        return False
-    try:
-        with open(file_path, 'r') as file:
-            data = json.load(file)
-            return bool(data)  # Return True if the dictionary is not empty
-    except (FileNotFoundError, json.JSONDecodeError):
-        return False
+    return any_users_exist()
 
 def storeLoginCredentials(user_data: dict) -> None:
     """
-    Stores user data (username and hashed password) in a JSON file.
+    Stores user data (username and password) in the database.
 
     Args:
-        user_data (dict): A dictionary containing the username and hashed password.
+        user_data (dict): A dictionary containing the username and password_hash.
     """
-    if os.path.exists(USER_DB_FILE):
-        with open(USER_DB_FILE, "r") as file:
-            data = json.load(file)  # Load existing data as a dictionary
-    else:
-        data = {}  # Initialize as an empty dictionary
-
-    # Check if the username already exists
-    if user_data["username"] in data:
-        raise ValueError("Username already exists. Choose a different one.")
-
-    # Add new user data (username:password_hash pair)
-    data[user_data["username"]] = user_data["password_hash"]
-    initializeStorage(user_data["username"])
-
-    # Write the updated data back to the file
-    with open(USER_DB_FILE, "w") as file:
-        json.dump(data, file, indent=4)
+    username = user_data["username"]
+    password_hash = user_data["password_hash"]
+    
+    # The password hash is already computed, but add_user expects the raw password
+    # We'll need to modify this approach
+    try:
+        add_user(username, password_hash)
+    except ValueError as e:
+        raise ValueError(str(e))
 
 def validatePasskey(passkey: str) -> tuple[bool, str]:
     """
@@ -89,7 +68,7 @@ def validatePasskey(passkey: str) -> tuple[bool, str]:
 
 def isUserValid(username: str, password: str) -> bool:
     """
-    Validates the user by checking the username and hashed password in the JSON file.
+    Validates the user by checking the username and password in the database.
 
     Args:
         username (str): The entered username.
@@ -99,23 +78,9 @@ def isUserValid(username: str, password: str) -> bool:
         bool: True if the username and password match the stored data, False otherwise.
     """
     try:
-        with open(USER_DB_FILE, "r") as file:
-            users = json.load(file)  # Load the data from the JSON file
-        
-        # Check if the username exists in the data
-        if username not in users:
-            print("*** ALERT: Username not found.")
-            return False
-        
-        # Get the stored hashed password for the username
-        stored_hashed_password = users[username]
-        
-        # Hash the entered password and compare it with the stored hashed password
-        entered_hashed_password = md5(password)
-        return entered_hashed_password == stored_hashed_password
-    
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"*** ERROR: Failed to read or parse {USER_DB_FILE}. {e}")
+        return validate_user(username, password)
+    except Exception as e:
+        print(f"*** ERROR: Failed to validate user. {e}")
         return False
 
 def checkPasswordStrength(password: str) -> tuple:

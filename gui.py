@@ -2,21 +2,21 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from tkinter.simpledialog import askstring
 from config import CURRENT_USER
-from crypto import md5, RSAencrypt, RSAdecrypt, generateRSAkeys
-from storage import loadCredentials, appendCredential, deleteCredential
+from crypto import md5
+from database import add_credential, get_credentials, delete_credential, initialize_database
 from utils import (
     validatePasskey, storeLoginCredentials, isUserValid, checkPasswordStrength,
     update_strength_meter, generate_and_display_password, copy_password_to_clipboard
 )
 
-# Constants for consistent UI
+# Defining constant main window sizes
 WINDOW_WIDTH = 500
 WINDOW_HEIGHT = 400
 PADDING = 20
 BUTTON_WIDTH = 20
 ENTRY_WIDTH = 30
 
-# Standardize sub-window sizes
+# sub-window sizes
 SUB_WINDOW_WIDTH = 500
 SUB_WINDOW_HEIGHT = 400
 
@@ -35,13 +35,16 @@ HEADER_FG = "white"
 CREDITS = "Made by Muhammad Hammad"
 
 def center_window(window, width, height):
-    """Center a window on the screen."""
+    """Center a window on the screen and set minimum size."""
     screen_width = window.winfo_screenwidth()
     screen_height = window.winfo_screenheight()
     x = (screen_width - width) // 2
     y = (screen_height - height) // 2
     window.geometry(f"{width}x{height}+{x}+{y}")
+    # Set minimum size to prevent UI elements from being cut off
     window.minsize(width, height)
+    # Update the window to ensure proper rendering
+    window.update_idletasks()
 
 def create_form_field(parent, label_text, show=None, width=ENTRY_WIDTH):
     """Create a standardized form field with label and entry."""
@@ -107,7 +110,7 @@ def setup_user(root) -> None:
     user_window.title("Set Up User")
     user_window.transient(root)
     user_window.grab_set()
-    center_window(user_window, SUB_WINDOW_WIDTH, SUB_WINDOW_HEIGHT)
+    center_window(user_window, SUB_WINDOW_WIDTH, SUB_WINDOW_HEIGHT+50)
     user_window.configure(bg=BG_COLOR)
     
     # Header
@@ -205,17 +208,16 @@ def setup_user(root) -> None:
             messagebox.showerror("Error", reason)
             return
         
-        hashed_password = md5(password)
-        user_data = {"username": username, "password_hash": hashed_password}
-        
         try:
-            storeLoginCredentials(user_data)
+            # We're now passing the raw password to add_user
+            from database import add_user
+            add_user(username, password)
             messagebox.showinfo("Setup Complete", "User setup successfully. You can now log in.")
             user_window.destroy()
         except Exception as e:
             messagebox.showerror("Error", f"Failed to set up user: {e}")
 
-    # Add the 'Submit' button to submit the credentials
+    # 'Submit' button to submit the credentials
     submit_frame = tk.Frame(content_frame, bg=BG_COLOR)
     submit_frame.pack(fill=tk.X, padx=PADDING, pady=(0, PADDING))
     
@@ -226,7 +228,7 @@ def setup_user(root) -> None:
     submit_button = create_button(button_container, "Create User", validate_and_store_user, is_primary=True)
     submit_button.pack(side=tk.LEFT, padx=5)
     
-    # Add Cancel button
+    # Cancel button
     cancel_button = create_button(button_container, "Cancel", user_window.destroy, is_primary=False)
     cancel_button.pack(side=tk.LEFT, padx=5)
     
@@ -294,7 +296,7 @@ def validate_user(root, show_main_interface) -> None:
     login_button = create_button(button_container, "Login", perform_login, is_primary=True)
     login_button.pack(side=tk.LEFT, padx=5)
     
-    # Add Cancel button
+    # Cancel button
     cancel_button = create_button(button_container, "Cancel", login_window.destroy, is_primary=False)
     cancel_button.pack(side=tk.LEFT, padx=5)
     
@@ -308,15 +310,17 @@ def logout(main_window: tk.Toplevel, root: tk.Tk) -> None:
     """Logs out the current user and returns to the login/setup screen."""
     
     CURRENT_USER.set("None")  # Reset the current user
+    CURRENT_USER.set_key(None)  # Reset the encryption key
     main_window.destroy()  # Close the main interface window
     root.deiconify()  # Redisplay the root login/setup window
 
-def add_credential() -> None:
+def add_credential_window() -> None:
     """Adds a new credential with password strength meter."""
     # Open a new window to add credentials
     credential_window = tk.Toplevel()
     credential_window.title("Add Credential")
-    center_window(credential_window, SUB_WINDOW_WIDTH, SUB_WINDOW_HEIGHT)
+    # Use the standard sub-window size
+    center_window(credential_window, SUB_WINDOW_WIDTH, SUB_WINDOW_HEIGHT + 120)
     credential_window.configure(bg=BG_COLOR)
     
     # Header
@@ -369,17 +373,15 @@ def add_credential() -> None:
         summary = strength + " Password! " +  reason
         messagebox.showinfo("Password Analysis", summary)
 
-        # Encrypt the password using RSA
-        public_key, private_key = generateRSAkeys()
-        encrypted_password = RSAencrypt(password, public_key)
-        
-        # Store the credential
-        appendCredential(website, username, encrypted_password, public_key, private_key)
+        try:
+            # Store the credential using the new database function
+            add_credential(website, username, password)
+            messagebox.showinfo("Success", "Credential added successfully!")
+            credential_window.destroy()
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to add credential: {e}")
 
-        messagebox.showinfo("Success", "Credential added successfully!")
-        credential_window.destroy()
-
-    # Submit button to add the credential
+    # Submit button
     submit_frame = tk.Frame(content_frame, bg=BG_COLOR)
     submit_frame.pack(fill=tk.X, padx=PADDING, pady=(0, PADDING))
     
@@ -390,7 +392,7 @@ def add_credential() -> None:
     submit_button = create_button(button_container, "Add Credential", submit_credential, is_primary=True)
     submit_button.pack(side=tk.LEFT, padx=5)
     
-    # Add Cancel button
+    # Cancel button
     cancel_button = create_button(button_container, "Cancel", credential_window.destroy, is_primary=False)
     cancel_button.pack(side=tk.LEFT, padx=5)
     
@@ -401,7 +403,7 @@ def view_credentials() -> None:
     """Displays all saved credentials with search functionality."""
     credentials_window = tk.Toplevel()
     credentials_window.title("View Credentials")
-    center_window(credentials_window, SUB_WINDOW_WIDTH + 100, SUB_WINDOW_HEIGHT + 50)
+    center_window(credentials_window, SUB_WINDOW_WIDTH, SUB_WINDOW_HEIGHT + 120)
     credentials_window.configure(bg=BG_COLOR)
     
     # Header
@@ -447,45 +449,35 @@ def view_credentials() -> None:
         """Filters and displays credentials based on the search query."""
         query = search_entry.get().lower()
         credentials_text.delete(1.0, tk.END)  # Clear previous results
-        current_user = CURRENT_USER.get()  # Get current user
-        if not current_user:
-            raise ValueError("No user is currently logged in")
         
-        # Load all credentials
-        credentials = loadCredentials(current_user)
-        if not credentials:
-            credentials_text.insert(tk.END, "No credentials found.")
-            return
+        try:
+            # Get credentials from the database, filtered by search term if provided
+            credentials = get_credentials(query if query else None)
             
-        # Filter credentials by website or username
-        filtered_credentials = []
-        for cred in credentials:
-            if query in cred['website'].lower() or query in cred['username'].lower() or not query:
-                filtered_credentials.append(cred)
+            if not credentials:
+                credentials_text.insert(tk.END, "No credentials found.")
+                return
+                
+            # Display credentials with index numbers
+            for i, cred in enumerate(credentials, 1):
+                # Apply tags for styling
+                credentials_text.insert(tk.END, f"{i}. Website: ", "index")
+                credentials_text.insert(tk.END, f"{cred['website']}\n", "website")
+                
+                credentials_text.insert(tk.END, f"   Username: ", "label")
+                credentials_text.insert(tk.END, f"{cred['username']}\n", "value")
+                
+                credentials_text.insert(tk.END, f"   Password: ", "label")
+                credentials_text.insert(tk.END, f"{cred['password']}\n\n", "value")
+            
+            # Configure tags
+            credentials_text.tag_configure("index", font=("Arial", 10, "bold"), foreground=PRIMARY_COLOR)
+            credentials_text.tag_configure("website", font=("Arial", 10, "bold"))
+            credentials_text.tag_configure("label", font=("Arial", 10), foreground=TEXT_COLOR)
+            credentials_text.tag_configure("value", font=("Arial", 10))
         
-        if not filtered_credentials:
-            credentials_text.insert(tk.END, "No matching credentials found.")
-            return
-            
-        # Display credentials with index numbers
-        for i, cred in enumerate(filtered_credentials, 1):
-            decrypted_password = RSAdecrypt(cred['password'], (cred['privatekey'], cred['modulus']))
-            
-            # Apply tags for styling
-            credentials_text.insert(tk.END, f"{i}. Website: ", "index")
-            credentials_text.insert(tk.END, f"{cred['website']}\n", "website")
-            
-            credentials_text.insert(tk.END, f"   Username: ", "label")
-            credentials_text.insert(tk.END, f"{cred['username']}\n", "value")
-            
-            credentials_text.insert(tk.END, f"   Password: ", "label")
-            credentials_text.insert(tk.END, f"{decrypted_password}\n\n", "value")
-        
-        # Configure tags
-        credentials_text.tag_configure("index", font=("Arial", 10, "bold"), foreground=PRIMARY_COLOR)
-        credentials_text.tag_configure("website", font=("Arial", 10, "bold"))
-        credentials_text.tag_configure("label", font=("Arial", 10), foreground=TEXT_COLOR)
-        credentials_text.tag_configure("value", font=("Arial", 10))
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load credentials: {e}")
     
     # Search button
     search_button = create_button(search_frame, "Search", search_credentials)
@@ -508,11 +500,12 @@ def view_credentials() -> None:
     # Add credits
     add_credits(credentials_window)
 
-def delete_credential() -> None:
-    """Deletes a credential by index with improved UI."""
+def delete_credential_window() -> None:
+    """Deletes a credential by ID with improved UI."""
     delete_window = tk.Toplevel()
-    delete_window.title("Delete Credential")
-    center_window(delete_window, SUB_WINDOW_WIDTH, SUB_WINDOW_HEIGHT)
+    delete_window.title("Delete Credential")    
+    # Use the standard sub-window size
+    center_window(delete_window, SUB_WINDOW_WIDTH, SUB_WINDOW_HEIGHT + 120)
     delete_window.configure(bg=BG_COLOR)
     
     # Header
@@ -546,23 +539,21 @@ def delete_credential() -> None:
     index_entry.pack(side=tk.LEFT)
     
     def perform_delete():
-        current_user = CURRENT_USER.get()  # Get current user
-        if not current_user:
-            raise ValueError("No user is currently logged in")
         try:
-            index = int(index_entry.get()) - 1  # Convert to 0-based index
+            index = int(index_entry.get())
             
-            credentials = loadCredentials(current_user)
+            # Get all credentials to find the one with the given index
+            credentials = get_credentials()
             
             if not credentials:
                 messagebox.showinfo("No Credentials", "No credentials to delete.")
                 return
                 
-            if index < 0 or index >= len(credentials):
-                raise IndexError
+            if index < 1 or index > len(credentials):
+                raise IndexError("Index out of range")
                 
-            # Show confirmation with credential details
-            cred = credentials[index]
+            # Get the credential at the specified index (1-based to 0-based)
+            cred = credentials[index - 1]
             website = cred['website']
             username = cred['username']
             
@@ -570,7 +561,8 @@ def delete_credential() -> None:
                                          f"Are you sure you want to delete:\n\nWebsite: {website}\nUsername: {username}")
             
             if confirm:
-                deleteCredential(index)
+                # Delete the credential using its database ID
+                delete_credential(cred['id'])
                 messagebox.showinfo("Success", "Credential deleted successfully.")
                 delete_window.destroy()
                 
@@ -599,3 +591,6 @@ def delete_credential() -> None:
     
     # Add credits
     add_credits(delete_window)
+
+# Initialize the database when the module is imported
+initialize_database()
