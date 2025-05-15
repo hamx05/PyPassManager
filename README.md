@@ -17,7 +17,7 @@
 ### 📚 Skills Demonstrated  
 - **Python Programming** - OOP principles and modular design  
 - **Tkinter GUI Development** - Built interactive desktop interface  
-- **Cryptography** - Implemented RSA + MD5 security layers  
+- **Cryptography** - Implemented AES + MD5 security layers  
 - **File Handling** - JSON storage with secure data management  
 - **Error Handling** - Robust input validation and user feedback  
 
@@ -28,7 +28,7 @@
 |-----------------|---------------------------------------|
 | Core Language   | Python 3.x                            |
 | GUI Framework   | Tkinter                               |
-| Cryptography    | RSA encryption, MD5 hashing           |
+| Cryptography    | AES encryption, MD5 hashing           |
 | Data Storage    | JSON files                            |
 | Utilities       | pyperclip, random, string modules     |
 
